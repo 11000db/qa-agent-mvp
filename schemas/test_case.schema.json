@@ -1,0 +1,103 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TestCase",
+  "type": "object",
+  "required": [
+    "feature_name",
+    "requirement_summary",
+    "priority",
+    "risk_level",
+    "preconditions",
+    "test_steps",
+    "expected_results",
+    "negative_cases",
+    "edge_cases",
+    "traceability"
+  ],
+  "properties": {
+    "feature_name": {
+      "type": "string",
+      "description": "기능명"
+    },
+    "requirement_summary": {
+      "type": "string",
+      "description": "요구사항 요약"
+    },
+    "priority": {
+      "type": "string",
+      "enum": ["P0", "P1", "P2", "P3"],
+      "description": "테스트 우선순위"
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": ["High", "Medium", "Low"],
+      "description": "리스크 수준"
+    },
+    "preconditions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "테스트 실행 전 준비 조건"
+    },
+    "test_steps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "description": "테스트 절차"
+    },
+    "expected_results": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "description": "예상 결과"
+    },
+    "negative_cases": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "실패/예외 중심 테스트 케이스"
+    },
+    "edge_cases": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "경계값/예외 시나리오"
+    },
+    "non_functional_checks": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "비기능 테스트 포인트"
+    },
+    "test_data": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "필요 테스트 데이터"
+    },
+    "traceability": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "요구사항과 테스트 항목 연결 정보"
+    },
+    "automation_candidate": {
+      "type": "boolean",
+      "description": "자동화 후보 여부"
+    },
+    "notes": {
+      "type": "string",
+      "description": "추가 메모"
+    }
+  }
+}
