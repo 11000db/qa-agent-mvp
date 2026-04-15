@@ -1,0 +1,24 @@
+{
+  "feature_name": "로그인",
+  "requirement_summary": "등록된 사용자는 이메일과 비밀번호를 입력하여 로그인할 수 있어야 한다.",
+  "priority": "P0",
+  "risk_level": "High",
+  "preconditions": [
+    "로그인 페이지에 접근할 수 있어야 한다."
+  ],
+  "test_steps": [
+    "로그인 버튼을 클릭한다."
+  ],
+  "expected_results": [
+    "로그인이 성공해야 한다."
+  ],
+  "negative_cases": [
+    "잘못된 비밀번호 입력 시 오류 메시지가 표시되어야 한다."
+  ],
+  "edge_cases": [
+    "이메일 입력값 앞뒤 공백 처리 여부를 확인해야 한다."
+  ],
+  "traceability": [
+    "REQ-LOGIN-001: 등록된 사용자는 이메일과 비밀번호로 로그인할 수 있어야 한다."
+  ]
+}

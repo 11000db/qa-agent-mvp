@@ -24,6 +24,11 @@ ALLOWED_RISK_LEVEL_VALUES = ["High", "Medium", "Low"]
 
 TRACEABILITY_PATTERN = r"^REQ-[A-Z0-9]+-\d{3}: .+"
 
+MIN_ITEMS_RULES = {
+    "test_steps": 2,
+    "expected_results": 2
+}
+
 DEFAULT_TEST_CASE_PATH = Path("sample_outputs/login_test_case.json")
 
 
@@ -129,6 +134,18 @@ def validate_duplicate_case_items(data: dict) -> list:
     return duplicate_items
 
 
+def validate_minimum_items(data: dict) -> list:
+    invalid_item_counts = []
+
+    for field, minimum_count in MIN_ITEMS_RULES.items():
+        value = data.get(field, [])
+
+        if isinstance(value, list) and len(value) < minimum_count:
+            invalid_item_counts.append(f"{field}: {len(value)}개 (최소 {minimum_count}개 필요)")
+
+    return invalid_item_counts
+
+
 def main() -> None:
     test_case_path = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_TEST_CASE_PATH
 
@@ -143,6 +160,7 @@ def main() -> None:
     invalid_enum_fields = validate_enum_fields(test_case_data)
     invalid_traceability_items = validate_traceability_format(test_case_data)
     duplicate_case_items = validate_duplicate_case_items(test_case_data)
+    invalid_item_counts = validate_minimum_items(test_case_data)
 
     print("테스트 케이스 파일 검사 시작")
     print(f"- 대상 파일: {test_case_path}")
@@ -201,6 +219,15 @@ def main() -> None:
         print("6. negative_cases / edge_cases 중복 여부: FAIL")
         print("중복된 항목:")
         for item in duplicate_case_items:
+            print(f"- {item}")
+
+    if not invalid_item_counts:
+        print("7. test_steps / expected_results 최소 개수 여부: PASS")
+    else:
+        has_error = True
+        print("7. test_steps / expected_results 최소 개수 여부: FAIL")
+        print("최소 개수 미달 항목:")
+        for item in invalid_item_counts:
             print(f"- {item}")
 
     if not has_error:
