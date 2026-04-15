@@ -98,6 +98,37 @@ def validate_traceability_format(data: dict) -> list:
     return invalid_traceability_items
 
 
+def normalize_text(value: str) -> str:
+    return value.strip().lower()
+
+
+def validate_duplicate_case_items(data: dict) -> list:
+    duplicate_items = []
+
+    negative_cases = data.get("negative_cases", [])
+    edge_cases = data.get("edge_cases", [])
+
+    if not isinstance(negative_cases, list) or not isinstance(edge_cases, list):
+        return ["negative_cases or edge_cases is not a list"]
+
+    normalized_negative_cases = {}
+    normalized_edge_cases = {}
+
+    for item in negative_cases:
+        if isinstance(item, str):
+            normalized_negative_cases[normalize_text(item)] = item
+
+    for item in edge_cases:
+        if isinstance(item, str):
+            normalized_edge_cases[normalize_text(item)] = item
+
+    for normalized_text in normalized_negative_cases:
+        if normalized_text in normalized_edge_cases:
+            duplicate_items.append(normalized_negative_cases[normalized_text])
+
+    return duplicate_items
+
+
 def main() -> None:
     test_case_path = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_TEST_CASE_PATH
 
@@ -111,6 +142,7 @@ def main() -> None:
     empty_list_fields = validate_empty_list_fields(test_case_data)
     invalid_enum_fields = validate_enum_fields(test_case_data)
     invalid_traceability_items = validate_traceability_format(test_case_data)
+    duplicate_case_items = validate_duplicate_case_items(test_case_data)
 
     print("테스트 케이스 파일 검사 시작")
     print(f"- 대상 파일: {test_case_path}")
@@ -160,6 +192,15 @@ def main() -> None:
         print("5. traceability 형식 여부: FAIL")
         print("형식이 올바르지 않은 traceability 항목:")
         for item in invalid_traceability_items:
+            print(f"- {item}")
+
+    if not duplicate_case_items:
+        print("6. negative_cases / edge_cases 중복 여부: PASS")
+    else:
+        has_error = True
+        print("6. negative_cases / edge_cases 중복 여부: FAIL")
+        print("중복된 항목:")
+        for item in duplicate_case_items:
             print(f"- {item}")
 
     if not has_error:
