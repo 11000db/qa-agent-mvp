@@ -1,4 +1,5 @@
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -17,6 +18,11 @@ REQUIRED_LIST_FIELDS = [
     "edge_cases",
     "traceability"
 ]
+
+ALLOWED_PRIORITY_VALUES = ["P0", "P1", "P2", "P3"]
+ALLOWED_RISK_LEVEL_VALUES = ["High", "Medium", "Low"]
+
+TRACEABILITY_PATTERN = r"^REQ-[A-Z0-9]+-\d{3}: .+"
 
 DEFAULT_TEST_CASE_PATH = Path("sample_outputs/login_test_case.json")
 
@@ -58,6 +64,40 @@ def validate_empty_list_fields(data: dict) -> list:
     return empty_list_fields
 
 
+def validate_enum_fields(data: dict) -> list:
+    invalid_fields = []
+
+    priority = data.get("priority")
+    risk_level = data.get("risk_level")
+
+    if priority is not None and priority not in ALLOWED_PRIORITY_VALUES:
+        invalid_fields.append(f"priority: {priority}")
+
+    if risk_level is not None and risk_level not in ALLOWED_RISK_LEVEL_VALUES:
+        invalid_fields.append(f"risk_level: {risk_level}")
+
+    return invalid_fields
+
+
+def validate_traceability_format(data: dict) -> list:
+    invalid_traceability_items = []
+
+    traceability_items = data.get("traceability", [])
+
+    if not isinstance(traceability_items, list):
+        return ["traceability field is not a list"]
+
+    for item in traceability_items:
+        if not isinstance(item, str):
+            invalid_traceability_items.append(str(item))
+            continue
+
+        if not re.match(TRACEABILITY_PATTERN, item):
+            invalid_traceability_items.append(item)
+
+    return invalid_traceability_items
+
+
 def main() -> None:
     test_case_path = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_TEST_CASE_PATH
 
@@ -69,6 +109,8 @@ def main() -> None:
     missing_fields = validate_missing_fields(test_case_data)
     empty_string_fields = validate_empty_string_fields(test_case_data)
     empty_list_fields = validate_empty_list_fields(test_case_data)
+    invalid_enum_fields = validate_enum_fields(test_case_data)
+    invalid_traceability_items = validate_traceability_format(test_case_data)
 
     print("테스트 케이스 파일 검사 시작")
     print(f"- 대상 파일: {test_case_path}")
@@ -101,6 +143,24 @@ def main() -> None:
         print("빈 리스트 필드:")
         for field in empty_list_fields:
             print(f"- {field}")
+
+    if not invalid_enum_fields:
+        print("4. priority / risk_level 허용값 여부: PASS")
+    else:
+        has_error = True
+        print("4. priority / risk_level 허용값 여부: FAIL")
+        print("허용되지 않은 값:")
+        for field in invalid_enum_fields:
+            print(f"- {field}")
+
+    if not invalid_traceability_items:
+        print("5. traceability 형식 여부: PASS")
+    else:
+        has_error = True
+        print("5. traceability 형식 여부: FAIL")
+        print("형식이 올바르지 않은 traceability 항목:")
+        for item in invalid_traceability_items:
+            print(f"- {item}")
 
     if not has_error:
         print("최종 결과: PASS")
