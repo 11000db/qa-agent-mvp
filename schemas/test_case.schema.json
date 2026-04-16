@@ -78,12 +78,8 @@
       "description": "비기능 테스트 포인트"
     },
     "test_data": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
       "description": "필요 테스트 데이터"
-    },
+},
     "traceability": {
       "type": "array",
       "items": {
@@ -96,7 +92,8 @@
       "description": "자동화 후보 여부"
     },
     "notes": {
-      "type": "string",
+      "type": "array",
+      "items": {"type": "string"},
       "description": "추가 메모"
     }
   }

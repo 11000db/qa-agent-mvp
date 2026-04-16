@@ -22,7 +22,7 @@ REQUIRED_LIST_FIELDS = [
 ALLOWED_PRIORITY_VALUES = ["P0", "P1", "P2", "P3"]
 ALLOWED_RISK_LEVEL_VALUES = ["High", "Medium", "Low"]
 
-TRACEABILITY_PATTERN = r"^REQ-[A-Z0-9]+-\d{3}: .+"
+TRACEABILITY_PATTERN = r"^REQ-[A-Z0-9]+(-[A-Z0-9]+)*-\d{3}: .+$"
 
 MIN_ITEMS_RULES = {
     "test_steps": 2,

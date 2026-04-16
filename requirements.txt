@@ -1,1 +1,3 @@
 jsonschema
+anthropic
+python-dotenv

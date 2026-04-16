@@ -1,0 +1,70 @@
+# Day 15 Summary: Claude API 연동 테스트 케이스 자동 생성
+
+## 작업 날짜
+2026-04-16
+
+## 목표
+Claude API를 연동하여 요구사항 파일을 입력하면 테스트 케이스 JSON을 자동으로 생성하고 저장하는 구조 구현
+
+## 작업 내용
+
+### 1. 라이브러리 설치
+```
+pip install anthropic python-dotenv
+```
+- requirements.txt에 anthropic, python-dotenv 추가
+
+### 2. 환경 변수 설정
+- `.env` 파일 생성 후 ANTHROPIC_API_KEY 설정
+- `.gitignore`에 `.env` 추가하여 API 키 노출 방지
+
+### 3. app/generate_test_case.py 생성
+- 요구사항 파일 읽기
+- 프롬프트 템플릿에 요구사항 삽입
+- Claude API 호출 (claude-sonnet-4-5, max_tokens: 4096)
+- 응답 JSON 파싱 및 sample_outputs/ 에 자동 저장
+
+### 4. 자동화 흐름
+```
+sample_inputs/login_requirement.md
+        ↓
+prompts/requirement_to_test_case.md (템플릿)
+        ↓
+Claude API 자동 호출
+        ↓
+sample_outputs/login_test_case.json (자동 저장)
+```
+
+### 5. 트러블슈팅
+- max_tokens 2048 → 4096으로 변경 (JSON 중간 잘림 문제)
+- 클로드가 object 형태로 뱉는 문제 → 프롬프트에 출력 형식 주의사항 추가
+- traceability 정규식 패턴 확장 (REQ-LOGIN-SEC-001 형식 허용)
+- schemas/test_case.schema.json 수정
+  - test_data: type 제한 제거 (object/array 모두 허용)
+  - notes: string → array로 변경
+
+## 실행 방법
+```powershell
+python app/generate_test_case.py sample_inputs/login_requirement.md
+```
+
+## 검증 결과
+```powershell
+python app/validate_test_case.py sample_outputs/login_test_case.json
+# 최종 결과: PASS
+
+python app/schema_validate_test_case.py sample_outputs/login_test_case.json
+# Schema 검증 결과: PASS
+```
+
+## 현재 파이프라인 구조
+| 단계 | 파일 | 역할 |
+|------|------|------|
+| 입력 | sample_inputs/*.md | 요구사항 문서 |
+| 템플릿 | prompts/requirement_to_test_case.md | 프롬프트 템플릿 |
+| 생성 | app/generate_test_case.py | Claude API 호출 및 JSON 저장 |
+| 검증 1 | app/validate_test_case.py | 커스텀 품질 규칙 검증 |
+| 검증 2 | app/schema_validate_test_case.py | JSON Schema 구조 검증 |
+
+## 다음 단계 (Day 16)
+- requirement → JSON 생성 → validate → schema validate 까지 한 번에 실행하는 end-to-end 파이프라인 연결
