@@ -29,6 +29,12 @@ MIN_ITEMS_RULES = {
     "expected_results": 2
 }
 
+INTERNAL_DUPLICATE_CHECK_FIELDS = [
+    "preconditions",
+    "test_steps",
+    "expected_results"
+]
+
 DEFAULT_TEST_CASE_PATH = Path("sample_outputs/login_test_case.json")
 
 
@@ -69,6 +75,7 @@ def validate_empty_list_fields(data: dict) -> list:
 
 def validate_enum_fields(data: dict) -> list:
     invalid_fields = []
+
     priority = data.get("priority")
     risk_level = data.get("risk_level")
 
@@ -108,7 +115,11 @@ def validate_duplicate_case_items(data: dict) -> list:
     if not isinstance(negative_cases, list) or not isinstance(edge_cases, list):
         return duplicates
 
-    normalized_negative_cases = {normalize_text(item): item for item in negative_cases if isinstance(item, str)}
+    normalized_negative_cases = {
+        normalize_text(item): item
+        for item in negative_cases
+        if isinstance(item, str)
+    }
 
     for item in edge_cases:
         if isinstance(item, str):
@@ -155,6 +166,31 @@ def validate_duplicate_traceability_items(data: dict) -> list:
     return duplicates
 
 
+def validate_duplicate_internal_list_items(data: dict) -> list:
+    duplicates = []
+
+    for field in INTERNAL_DUPLICATE_CHECK_FIELDS:
+        value = data.get(field, [])
+
+        if not isinstance(value, list):
+            continue
+
+        seen = set()
+
+        for item in value:
+            if not isinstance(item, str):
+                continue
+
+            normalized_item = normalize_text(item)
+
+            if normalized_item in seen:
+                duplicates.append(f"{field}: {item}")
+            else:
+                seen.add(normalized_item)
+
+    return duplicates
+
+
 def main() -> None:
     test_case_path = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_TEST_CASE_PATH
 
@@ -171,6 +207,7 @@ def main() -> None:
     duplicate_case_items = validate_duplicate_case_items(test_case_data)
     invalid_item_counts = validate_minimum_items(test_case_data)
     duplicate_traceability_items = validate_duplicate_traceability_items(test_case_data)
+    duplicate_internal_list_items = validate_duplicate_internal_list_items(test_case_data)
 
     print("테스트 케이스 파일 검사 시작")
     print(f"- 대상 파일: {test_case_path}")
@@ -247,6 +284,15 @@ def main() -> None:
         print("8. traceability 중복 여부: FAIL")
         print("중복된 traceability 항목:")
         for item in duplicate_traceability_items:
+            print(f"- {item}")
+
+    if not duplicate_internal_list_items:
+        print("9. preconditions / test_steps / expected_results 내부 중복 여부: PASS")
+    else:
+        has_error = True
+        print("9. preconditions / test_steps / expected_results 내부 중복 여부: FAIL")
+        print("중복된 내부 리스트 항목:")
+        for item in duplicate_internal_list_items:
             print(f"- {item}")
 
     if not has_error:
