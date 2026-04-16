@@ -1,0 +1,96 @@
+# Day 16 Summary: End-to-End 파이프라인 연결
+
+## 작업 날짜
+2026-04-16
+
+## 목표
+요구사항 입력부터 테스트 케이스 JSON 생성, 커스텀 검증, Schema 검증까지
+한 번의 명령어로 실행되는 end-to-end 파이프라인 구현
+
+## 작업 내용
+
+### 1. app/run_pipeline.py 생성
+기존 3개의 스크립트를 하나로 통합
+
+**기존 방식 (3번 실행):**
+```powershell
+python app/generate_test_case.py sample_inputs/login_requirement.md
+python app/validate_test_case.py sample_outputs/login_test_case.json
+python app/schema_validate_test_case.py sample_outputs/login_test_case.json
+```
+
+**변경 후 (1번 실행):**
+```powershell
+python app/run_pipeline.py sample_inputs/login_requirement.md
+```
+
+### 2. 파이프라인 흐름
+```
+[Step 1] 테스트 케이스 생성
+  sample_inputs/*.md
+        ↓
+  prompts/requirement_to_test_case.md
+        ↓
+  Claude API 호출
+        ↓
+  sample_outputs/*_test_case.json 저장
+
+[Step 2] 커스텀 검증
+  validate_test_case 로직 실행
+  - 필수 필드 존재 여부
+  - 문자열/리스트 필드 공백 여부
+  - priority/risk_level 허용값
+  - traceability 형식
+  - negative/edge 교차 중복
+  - 최소 개수
+  - 내부 중복
+
+[Step 3] Schema 검증
+  schema_validate_test_case 로직 실행
+  - schemas/test_case.schema.json 기준 검증
+```
+
+### 3. 트러블슈팅
+- traceability를 object 형태로 뱉는 문제
+  → 프롬프트에 "반드시 문자열 배열로 출력, 객체 형태 금지" 명시
+- traceability 형식 오류 (숫자 없이 출력)
+  → 프롬프트에 "REQ-기능명-숫자: 설명, 숫자는 반드시 3자리" 명시
+
+## 실행 결과
+```
+==================================================
+QA Agent MVP - End-to-End Pipeline
+==================================================
+[Step 1] 테스트 케이스 생성
+  - Claude API 호출 중...
+  - 저장 완료: sample_outputs\login_test_case.json
+[Step 2] 커스텀 검증 (validate_test_case)
+  [PASS] 필수 필드 존재
+  [PASS] 문자열 필드 공백
+  [PASS] 리스트 필드 공백
+  [PASS] priority/risk_level 허용값
+  [PASS] traceability 형식
+  [PASS] negative/edge 교차 중복
+  [PASS] test_steps/expected_results 최소 개수
+  [PASS] 중복 검사 (traceability/internal/negative/edge)
+[Step 3] Schema 검증 (schema_validate_test_case)
+  [PASS] JSON Schema 검증
+==================================================
+최종 결과: PASS ✅
+==================================================
+```
+
+## 현재 파이프라인 구조
+| 단계 | 파일 | 역할 |
+|------|------|------|
+| 입력 | sample_inputs/*.md | 요구사항 문서 |
+| 템플릿 | prompts/requirement_to_test_case.md | 프롬프트 템플릿 |
+| 파이프라인 | app/run_pipeline.py | 전체 흐름 통합 실행 |
+| 생성 | app/generate_test_case.py | Claude API 호출 및 JSON 저장 |
+| 검증 1 | app/validate_test_case.py | 커스텀 품질 규칙 검증 |
+| 검증 2 | app/schema_validate_test_case.py | JSON Schema 구조 검증 |
+| 스키마 | schemas/test_case.schema.json | 스키마 정의 |
+
+## 다음 단계 (Day 17)
+- 검증 결과를 markdown 리포트로 자동 생성
+- sample_reports/ 폴더에 PASS/FAIL 요약 저장

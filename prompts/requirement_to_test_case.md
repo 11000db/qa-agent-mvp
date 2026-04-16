@@ -14,7 +14,10 @@
 - happy path만 쓰지 말고 negative_cases와 edge_cases를 반드시 포함한다.
 - preconditions와 test_data는 실제 실행 가능한 수준으로 작성한다.
 - 자동화 가치가 높으면 automation_candidate를 true로 설정한다.
-- traceability는 반드시 요구사항별 식별자 형태(예: REQ-LOGIN-001)로 작성하고, 각 테스트 포인트가 어떤 요구사항을 검증하는지 연결해야 한다.
+- traceability는 반드시 아래 형식의 문자열 배열로만 출력한다.
+  - 올바른 형식: ["REQ-LOGIN-001: 설명", "REQ-LOGIN-002: 설명"]
+  - 절대로 객체(object) 형태로 출력하지 않는다.
+  - 반드시 "REQ-기능명-숫자: 설명" 형태여야 한다. 숫자는 반드시 3자리다.
 - negative_cases와 edge_cases는 서로 중복되지 않게 작성하고, 실제 서비스에서 자주 발생할 수 있는 사용자 실수, 상태 전이, 경계값 상황을 우선 반영한다.
 
 
