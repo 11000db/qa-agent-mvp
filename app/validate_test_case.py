@@ -191,6 +191,54 @@ def validate_duplicate_internal_list_items(data: dict) -> list:
     return duplicates
 
 
+# ✅ Day 13 추가: negative_cases 내부 중복 검사
+def validate_duplicate_negative_cases(data: dict) -> list:
+    duplicates = []
+    seen = set()
+
+    negative_cases = data.get("negative_cases", [])
+
+    if not isinstance(negative_cases, list):
+        return duplicates
+
+    for item in negative_cases:
+        if not isinstance(item, str):
+            continue
+
+        normalized_item = normalize_text(item)
+
+        if normalized_item in seen:
+            duplicates.append(item)
+        else:
+            seen.add(normalized_item)
+
+    return duplicates
+
+
+# ✅ Day 13 추가: edge_cases 내부 중복 검사
+def validate_duplicate_edge_cases(data: dict) -> list:
+    duplicates = []
+    seen = set()
+
+    edge_cases = data.get("edge_cases", [])
+
+    if not isinstance(edge_cases, list):
+        return duplicates
+
+    for item in edge_cases:
+        if not isinstance(item, str):
+            continue
+
+        normalized_item = normalize_text(item)
+
+        if normalized_item in seen:
+            duplicates.append(item)
+        else:
+            seen.add(normalized_item)
+
+    return duplicates
+
+
 def main() -> None:
     test_case_path = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_TEST_CASE_PATH
 
@@ -208,6 +256,9 @@ def main() -> None:
     invalid_item_counts = validate_minimum_items(test_case_data)
     duplicate_traceability_items = validate_duplicate_traceability_items(test_case_data)
     duplicate_internal_list_items = validate_duplicate_internal_list_items(test_case_data)
+    # ✅ Day 13 추가: 호출부
+    duplicate_negative_cases = validate_duplicate_negative_cases(test_case_data)
+    duplicate_edge_cases = validate_duplicate_edge_cases(test_case_data)
 
     print("테스트 케이스 파일 검사 시작")
     print(f"- 대상 파일: {test_case_path}")
@@ -293,6 +344,25 @@ def main() -> None:
         print("9. preconditions / test_steps / expected_results 내부 중복 여부: FAIL")
         print("중복된 내부 리스트 항목:")
         for item in duplicate_internal_list_items:
+            print(f"- {item}")
+
+    # ✅ Day 13 추가: 출력부
+    if not duplicate_negative_cases:
+        print("10. negative_cases 내부 중복 여부: PASS")
+    else:
+        has_error = True
+        print("10. negative_cases 내부 중복 여부: FAIL")
+        print("중복된 항목:")
+        for item in duplicate_negative_cases:
+            print(f"- {item}")
+
+    if not duplicate_edge_cases:
+        print("11. edge_cases 내부 중복 여부: PASS")
+    else:
+        has_error = True
+        print("11. edge_cases 내부 중복 여부: FAIL")
+        print("중복된 항목:")
+        for item in duplicate_edge_cases:
             print(f"- {item}")
 
     if not has_error:
