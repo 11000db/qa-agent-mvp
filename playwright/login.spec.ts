@@ -56,21 +56,23 @@ test.describe('사용자 로그인', () => {
     });
 
     test('Negative 3', async ({ page }) => {
-      await page.goto(BASE_URL);
-      // 이메일 필드를 비워두고 비밀번호만 입력 후 로그인 버튼 클릭 시 '이메일을 입력해주세요' 유효성 검증 메시지가 표시된다
-      // TODO: implement
+      await page.goto(`${BASE_URL}/login`);
+      await page.fill('#password', 'SuperSecretPassword!');
+      await page.click('button[type="submit"]');
+      await expect(page.locator('.flash.error')).toBeVisible();
     });
 
     test('Negative 4', async ({ page }) => {
-      await page.goto(BASE_URL);
-      // 비밀번호 필드를 비워두고 이메일만 입력 후 로그인 버튼 클릭 시 '비밀번호를 입력해주세요' 유효성 검증 메시지가 표시된다
-      // TODO: implement
+      await page.goto(`${BASE_URL}/login`);
+      await page.fill('#username', 'tomsmith');
+      await page.click('button[type="submit"]');
+      await expect(page.locator('.flash.error')).toBeVisible();
     });
 
     test('Negative 5', async ({ page }) => {
-      await page.goto(BASE_URL);
-      // 이메일과 비밀번호를 모두 비워두고 로그인 버튼 클릭 시 '이메일과 비밀번호를 입력해주세요' 유효성 검증 메시지가 표시된다
-      // TODO: implement
+      await page.goto(`${BASE_URL}/login`);
+      await page.click('button[type="submit"]');
+      await expect(page.locator('.flash.error')).toBeVisible();
     });
 
     test('Negative 6', async ({ page }) => {
