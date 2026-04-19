@@ -12,7 +12,12 @@ const BASE_URL = 'https://the-internet.herokuapp.com';
 test.describe('사용자 로그인', () => {
 
   test('Happy Path - 정상 동작 확인', async ({ page }) => {
-    await page.goto(BASE_URL);
+    await page.goto(`${BASE_URL}/login`);
+    await page.fill('#username', 'tomsmith');
+    await page.fill('#password', 'SuperSecretPassword!');
+    await page.click('button[type="submit"]');
+    await expect(page).toHaveURL(`${BASE_URL}/secure`);
+    await expect(page.locator('.flash.success')).toBeVisible();
 
     // Test Steps
     // 로그인 페이지(URL: /login)로 이동한다
@@ -34,15 +39,20 @@ test.describe('사용자 로그인', () => {
   test.describe('Negative Cases', () => {
 
     test('Negative 1', async ({ page }) => {
-      await page.goto(BASE_URL);
-      // 존재하지 않는 이메일(notexist@example.com)과 임의 비밀번호 입력 시 '이메일 또는 비밀번호가 올바르지 않습니다' 메시지가 표시되고 로그인이 차단된다
-      // TODO: implement
+      await page.goto(`${BASE_URL}/login`);
+      await page.fill('#username', 'wronguser');
+      await page.fill('#password', 'wrongpassword');
+      await page.click('button[type="submit"]');
+      await expect(page.locator('.flash.error')).toBeVisible();
     });
 
     test('Negative 2', async ({ page }) => {
-      await page.goto(BASE_URL);
-      // 올바른 이메일(test@example.com)과 잘못된 비밀번호(WrongPass123) 입력 시 '이메일 또는 비밀번호가 올바르지 않습니다' 메시지가 표시되고 로그인이 차단된다
-      // TODO: implement
+      await page.goto(`${BASE_URL}/login`);
+      await page.fill('#username', 'tomsmith');
+      await page.fill('#password', 'WrongPass123');
+      await page.click('button[type="submit"]');
+      await expect(page.locator('.flash.error')).toBeVisible();
+      await expect(page.locator('.flash.error')).toContainText('Your password is invalid');
     });
 
     test('Negative 3', async ({ page }) => {
