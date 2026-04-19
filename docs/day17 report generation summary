@@ -1,0 +1,52 @@
+# Day 17 Summary: 검증 결과 markdown 리포트 자동 생성
+
+## 작업 날짜
+2026-04-20
+
+## 목표
+validator 검증 결과를 markdown 리포트로 자동 생성하여 sample_reports/ 폴더에 저장
+
+## 작업 내용
+
+### 1. app/generate_report.py 생성
+- 테스트 케이스 JSON 파일을 읽어 커스텀 검증 + Schema 검증 수행
+- 결과를 markdown 표 형태로 자동 생성
+- sample_reports/ 폴더에 자동 저장
+
+### 2. 리포트 구성
+- 기본 정보 (생성 일시, 대상 파일, 기능명, Priority, Risk Level)
+- 최종 결과 (PASS / FAIL)
+- 커스텀 검증 결과 표 (검사 항목별 PASS/FAIL + 상세 내용)
+- JSON Schema 검증 결과
+
+### 3. 파일명 규칙
+입력 파일명 기반으로 자동 생성
+```
+sample_outputs/login_test_case.json
+→ sample_reports/login_test_case_validation_report.md
+```
+
+## 실행 방법
+```powershell
+python app/generate_report.py sample_outputs/login_test_case.json
+```
+
+## 실행 결과
+```
+리포트 생성 완료: sample_reports\login_test_case_validation_report.md
+```
+
+## 현재 파이프라인 구조
+| 단계 | 파일 | 역할 |
+|------|------|------|
+| 입력 | sample_inputs/*.md | 요구사항 문서 |
+| 템플릿 | prompts/requirement_to_test_case.md | 프롬프트 템플릿 |
+| 파이프라인 | app/run_pipeline.py | 전체 흐름 통합 실행 |
+| 생성 | app/generate_test_case.py | Claude API 호출 및 JSON 저장 |
+| 검증 1 | app/validate_test_case.py | 커스텀 품질 규칙 검증 |
+| 검증 2 | app/schema_validate_test_case.py | JSON Schema 구조 검증 |
+| 리포트 | app/generate_report.py | 검증 결과 markdown 리포트 생성 |
+
+## 다음 단계 (Day 18)
+- 테스트 케이스 JSON → Playwright 테스트 코드 skeleton 자동 생성
+- sample_outputs/*_test_case.json → playwright/*.spec.ts 변환
