@@ -1,102 +1,228 @@
 # QA Agent MVP
 
+> 요구사항 문서를 입력받아 Claude API로 테스트 케이스를 자동 생성하고,
+> 구조/품질 검증을 거쳐 Playwright 자동화 테스트 코드까지 변환하는 end-to-end QA 파이프라인
+
+---
+
 ## 1. 프로젝트 소개
-요구사항 또는 티켓을 입력하면, QA 관점으로 테스트 포인트를 분석하고 리스크 기반 테스트 케이스와 Playwright 테스트 초안을 생성하는 QA Agent MVP입니다.
 
-## 2. 왜 만들었는가
-실무에서 요구사항 분석과 테스트 케이스 작성은 시간이 많이 들고, 사람마다 테스트 품질 편차가 큽니다.
-이 프로젝트는 QA 노하우를 구조화해서 테스트 설계 생산성을 높이는 것을 목표로 합니다.
+실무에서 요구사항 분석과 테스트 케이스 작성은 시간이 많이 들고, 사람마다 품질 편차가 큽니다.
 
-## 3. 목표
-- 요구사항 입력
-- 테스트 포인트 분석
-- 리스크 기반 테스트 케이스 생성
-- Playwright 테스트 초안 생성
-- 실행 결과 저장
+이 프로젝트는 **Claude API를 연동하여 요구사항을 입력하면 테스트 케이스 JSON을 자동 생성하고, 커스텀 검증 + JSON Schema 검증 + markdown 리포트 자동 생성 + Playwright 테스트 코드 변환까지 명령어 한 번으로 실행**되는 QA 자동화 파이프라인입니다.
 
-## 4. 이번 MVP 범위
-### 포함
-- 요구사항 입력
-- 테스트 포인트 분석
-- 테스트 케이스 생성
-- risk / priority 분류
-- Playwright 테스트 초안 생성
-- 샘플 실행 결과 저장
+---
 
-### 제외
-- 완전 자동 self-healing
-- CI/CD 완전 연동
-- 사내 시스템 직접 연동
-- 멀티 에이전트 고도화
-- 범용 대규모 플랫폼화
+## 2. 전체 파이프라인
 
-## 6. 샘플 기능
+```
+요구사항 문서 (sample_inputs/*.md)
+        ↓
+Claude API 호출 (generate_test_case.py)
+        ↓
+테스트 케이스 JSON 자동 생성 (sample_outputs/*.json)
+        ↓
+커스텀 품질 검증 (validate_test_case.py) ──→ 11개 규칙 검사
+        ↓
+JSON Schema 검증 (schema_validate_test_case.py)
+        ↓
+markdown 리포트 자동 생성 (sample_reports/*.md)
+        ↓
+Playwright 테스트 코드 자동 생성 (playwright/*.spec.ts)
+```
 
-이 MVP는 아래와 같은 대표 기능을 기준으로 테스트 케이스 생성과 자동화 흐름을 검증합니다.
+**end-to-end 실행 (명령어 한 번):**
+```bash
+python app/run_pipeline.py sample_inputs/login_requirement.md
+```
 
-### 1) 로그인
-- 이메일/비밀번호 기반 로그인
-- 잘못된 비밀번호 처리
-- 존재하지 않는 계정 처리
-- 이메일 형식 유효성 검사
-- 로그인 성공 후 페이지 이동 확인
+---
 
-### 2) 회원가입
-- 이름, 이메일, 비밀번호 입력 검증
-- 필수값 누락 처리
-- 중복 이메일 가입 방지
-- 비밀번호 길이/형식 검증
-- 회원가입 성공 메시지 확인
+## 3. 주요 기능
 
-### 3) 장바구니 담기
-- 상품 상세 페이지에서 장바구니 추가
-- 동일 상품 재추가 시 수량 증가
-- 장바구니 내 수량 변경
-- 수량이 0이 될 경우 상품 제거
-- 장바구니 상태 반영 확인
+### 3-1. 테스트 케이스 자동 생성
+- 요구사항 문서를 입력하면 Claude API를 호출하여 JSON 형태의 테스트 케이스 자동 생성
+- 프롬프트 템플릿 기반으로 Happy Path / Negative Case / Edge Case 포함
 
-### 4) 향후 확장 가능한 기능 예시
-- 비밀번호 찾기 / 재설정
-- 결제 및 주문 완료
-- 프로필 수정
-- 검색 및 필터
-- 권한별 접근 제어
+### 3-2. 커스텀 품질 검증 (11개 규칙)
+| 번호 | 검사 항목 |
+|------|----------|
+| 1 | 필수 필드 존재 여부 |
+| 2 | 필수 문자열 필드 공백 여부 |
+| 3 | 필수 리스트 필드 공백 여부 |
+| 4 | priority / risk_level 허용값 여부 |
+| 5 | traceability 형식 여부 |
+| 6 | negative_cases / edge_cases 교차 중복 여부 |
+| 7 | test_steps / expected_results 최소 개수 여부 |
+| 8 | traceability 내부 중복 여부 |
+| 9 | preconditions / test_steps / expected_results 내부 중복 여부 |
+| 10 | negative_cases 내부 중복 여부 |
+| 11 | edge_cases 내부 중복 여부 |
 
-## 7. 향후 계획
+### 3-3. JSON Schema 검증
+- `schemas/test_case.schema.json` 기준으로 구조 검증
+- jsonschema 라이브러리 (Draft7Validator) 사용
 
-이 프로젝트는 단순한 테스트 케이스 생성기가 아니라,
-QA 관점의 판단 기준과 자동화 실행 흐름을 연결하는 QA Agent MVP를 목표로 합니다.
+### 3-4. 검증 리포트 자동 생성
+- 검증 결과를 markdown 리포트로 자동 저장
+- `sample_reports/*_validation_report.md`
 
-### 단기 계획
-- 테스트 케이스 JSON 스키마 설계
-- 요구사항 분석 프롬프트 정리
-- 리스크 기반 테스트 포인트 추출 로직 추가
-- 우선순위(priority) / 리스크(risk) 분류 기능 추가
+### 3-5. Playwright 테스트 코드 자동 생성
+- 테스트 케이스 JSON에서 Playwright TypeScript 코드 자동 생성
+- Happy Path / Negative Cases / Edge Cases 구조로 scaffold 생성
+- 실제 동작 검증 구현 (Happy Path, Negative 1~2)
 
-### 중기 계획
-- 생성된 테스트 케이스를 Playwright 테스트 코드로 변환
-- 샘플 시나리오 자동 실행
-- 실행 결과(pass/fail, 로그, trace) 저장
-- 실패 유형 분류(selector 문제, 데이터 문제, 앱 이슈 등)
+```typescript
+test('Happy Path - 정상 동작 확인', async ({ page }) => {
+  await page.goto(`${BASE_URL}/login`);
+  await page.fill('#username', 'tomsmith');
+  await page.fill('#password', 'SuperSecretPassword!');
+  await page.click('button[type="submit"]');
+  await expect(page).toHaveURL(`${BASE_URL}/secure`);
+  await expect(page.locator('.flash.success')).toBeVisible();
+});
+```
 
-### 장기 계획
-- Human-in-the-loop 리뷰 프로세스 추가
-- QA 리뷰 기준 기반 점수화 기능 추가
-- 테스트 자산 축적을 통한 품질 개선
-- 향후 API 테스트 및 회귀 테스트 범위 확장
+---
 
-### 포트폴리오 목표
-- 요구사항 → 테스트 포인트 분석 → 테스트 케이스 생성 → Playwright 테스트 초안 생성 → 실행 결과 확인
-흐름을 하나의 데모로 보여줄 수 있는 수준까지 완성하는 것을 목표로 합니다.
+## 4. 실행 방법
+
+### 환경 설정
+```bash
+# Python 패키지 설치
+pip install -r requirements.txt
+
+# .env 파일 생성
+ANTHROPIC_API_KEY=your_api_key_here
+
+# Playwright 설치
+npm install -D @playwright/test
+npx playwright install
+```
+
+### 실행
+
+```bash
+# end-to-end 파이프라인 (생성 + 검증 한 번에)
+python app/run_pipeline.py sample_inputs/login_requirement.md
+
+# 개별 실행
+python app/generate_test_case.py sample_inputs/login_requirement.md
+python app/validate_test_case.py sample_outputs/login_test_case.json
+python app/schema_validate_test_case.py sample_outputs/login_test_case.json
+python app/generate_report.py sample_outputs/login_test_case.json
+python app/generate_playwright.py sample_outputs/login_test_case.json
+
+# Playwright 테스트 실행
+npx playwright test playwright/login.spec.ts --headed
+npx playwright test playwright/login.spec.ts --reporter=html
+```
+
+---
 
 ## 5. 폴더 구조
-```text
-app/
-docs/
-sample_inputs/
-sample_outputs/
-tests/
-playwright/
-run_results/
-prompts/
-schemas/
+
+```
+qa-agent-mvp/
+├── app/
+│   ├── main.py                      # 프롬프트 조립
+│   ├── generate_test_case.py        # Claude API 연동 TC 자동 생성
+│   ├── validate_test_case.py        # 커스텀 품질 검증 (11개 규칙)
+│   ├── schema_validate_test_case.py # JSON Schema 검증
+│   ├── generate_report.py           # 검증 리포트 자동 생성
+│   ├── generate_playwright.py       # Playwright 코드 자동 생성
+│   └── run_pipeline.py              # end-to-end 파이프라인
+├── docs/                            # 일별 작업 summary
+├── playwright/                      # 생성된 Playwright 테스트 코드
+├── prompts/                         # 프롬프트 템플릿
+├── sample_inputs/                   # 요구사항 문서
+├── sample_outputs/                  # 생성된 테스트 케이스 JSON
+├── sample_reports/                  # 검증 리포트
+├── schemas/                         # JSON Schema 정의
+├── requirements.txt
+└── .env.example
+```
+
+---
+
+## 6. 기술 스택
+
+| 구분 | 기술 |
+|------|------|
+| AI | Claude API (Anthropic SDK, claude-sonnet-4-5) |
+| 언어 | Python, TypeScript |
+| 테스트 자동화 | Playwright |
+| 검증 | jsonschema (Draft7Validator) |
+| 버전 관리 | Git, GitHub |
+
+---
+
+## 7. 샘플 입력 / 출력
+
+### 입력 (sample_inputs/login_requirement.md)
+```markdown
+# 로그인 기능 요구사항
+- 이메일/비밀번호 기반 로그인
+- 잘못된 정보 입력 시 오류 메시지 표시
+- 로그인 성공 시 메인 페이지 이동
+```
+
+### 출력 (sample_outputs/login_test_case.json)
+```json
+{
+  "feature_name": "사용자 로그인",
+  "priority": "P0",
+  "risk_level": "High",
+  "test_steps": [...],
+  "expected_results": [...],
+  "negative_cases": [...],
+  "edge_cases": [...],
+  "traceability": ["REQ-LOGIN-001: ..."]
+}
+```
+
+### 파이프라인 실행 결과
+```
+==================================================
+QA Agent MVP - End-to-End Pipeline
+==================================================
+[Step 1] 테스트 케이스 생성
+  - Claude API 호출 중...
+  - 저장 완료: sample_outputs/login_test_case.json
+[Step 2] 커스텀 검증
+  [PASS] 필수 필드 존재
+  [PASS] traceability 형식
+  ...
+[Step 3] Schema 검증
+  [PASS] JSON Schema 검증
+==================================================
+최종 결과: PASS ✅
+==================================================
+```
+
+---
+
+## 8. 향후 계획
+
+| 단계 | 내용 |
+|------|------|
+| 단기 | 회원가입 / 장바구니 Playwright 실제 구현 |
+| 단기 | Negative / Edge Case 전체 구현 |
+| 중기 | API 테스트 자동화 추가 (pytest + requests) |
+| 중기 | 데이터 드리븐 테스트 리팩토링 |
+| 장기 | CI/CD 파이프라인 연동 (GitHub Actions) |
+| 장기 | 성능 테스트 추가 (Locust) |
+
+---
+
+## 9. 작업 이력
+
+| Day | 작업 내용 |
+|-----|----------|
+| Day 1~12 | 프롬프트 파이프라인 구성, 테스트 케이스 JSON 설계, validator 구현 |
+| Day 13 | negative/edge_cases 내부 중복 검사 추가 |
+| Day 14 | JSON Schema 정식 검증 도입 |
+| Day 15 | Claude API 연동 테스트 케이스 자동 생성 |
+| Day 16 | end-to-end 파이프라인 구현 |
+| Day 17 | 검증 결과 markdown 리포트 자동 생성 |
+| Day 18 | Playwright 테스트 코드 자동 생성 및 실제 구현 |
