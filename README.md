@@ -1,3 +1,5 @@
+![CI](https://github.com/11000db/qa-agent-mvp/actions/workflows/test.yml/badge.svg)
+
 # QA Agent MVP
 
 > 요구사항 문서를 입력받아 Claude API로 테스트 케이스를 자동 생성하고,
