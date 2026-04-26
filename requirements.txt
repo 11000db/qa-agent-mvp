@@ -1,3 +1,6 @@
 jsonschema
 anthropic
 python-dotenv
+requests
+pytest
+pytest-html
