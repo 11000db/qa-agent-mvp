@@ -1,0 +1,33 @@
+name: QA Agent MVP CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v3
+
+      - name: Python 환경 설정
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Python 패키지 설치
+        run: pip install -r requirements.txt
+
+      - name: pytest API 테스트 실행
+        run: pytest tests/test_api_login.py -v --html=sample_reports/api_test_report.html
+
+      - name: 리포트 아티팩트 업로드
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: api-test-report
+          path: sample_reports/api_test_report.html
