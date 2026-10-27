@@ -4,3 +4,6 @@ python-dotenv
 requests
 pytest
 pytest-html
+fastapi
+uvicorn
+httpx

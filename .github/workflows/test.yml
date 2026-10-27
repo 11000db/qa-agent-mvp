@@ -24,6 +24,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: pytest 코어 로직 + 웹 API 서버 테스트 실행
+        run: python -m pytest tests/test_core.py tests/test_server.py -v
+
       - name: pytest API 테스트 실행
         run: python -m pytest tests/test_api_login.py -v --html=sample_reports/api_test_report.html
 

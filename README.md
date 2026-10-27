@@ -86,6 +86,20 @@ test('Happy Path - 정상 동작 확인', async ({ page }) => {
 });
 ```
 
+### 3-6. 웹 API 서버 (FastAPI)
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| GET | `/api/health` | 서버 상태, 기본 mode, 모델 |
+| GET | `/api/samples` | 샘플 요구사항 목록 |
+| POST | `/api/generate` | 요구사항 → 테스트 케이스 JSON |
+| POST | `/api/validate` | 테스트 케이스 → 11개 규칙 + Schema 검증 결과 |
+| POST | `/api/report` | 테스트 케이스 → markdown 리포트 |
+| POST | `/api/playwright` | 테스트 케이스 → Playwright 코드 |
+| POST | `/api/pipeline` | 요구사항 → 생성 + 검증 + 리포트 + Playwright 한 번에 |
+
+- `mode`: `auto`(기본, API 키 있으면 live / 없으면 mock), `mock`(샘플 결과), `live`(Claude API 호출)
+- mock 모드 덕분에 API 키 없이도 데모와 CI 테스트가 동작
+
 ---
 
 ## 4. 실행 방법
@@ -108,6 +122,12 @@ npx playwright install
 ```bash
 # end-to-end 파이프라인 (생성 + 검증 한 번에)
 python app/run_pipeline.py sample_inputs/login_requirement.md
+
+# API 키 없이 샘플 결과로 실행 (mock 모드)
+python app/run_pipeline.py sample_inputs/login_requirement.md --mode mock
+
+# 웹 API 서버 실행 → http://127.0.0.1:8000/docs
+python app/server.py
 
 # 개별 실행
 python app/generate_test_case.py sample_inputs/login_requirement.md
@@ -134,6 +154,8 @@ qa-agent-mvp/
 │   ├── schema_validate_test_case.py # JSON Schema 검증
 │   ├── generate_report.py           # 검증 리포트 자동 생성
 │   ├── generate_playwright.py       # Playwright 코드 자동 생성
+│   ├── core.py                      # 파이프라인 핵심 로직 (CLI/서버 공용)
+│   ├── server.py                    # FastAPI 웹 API 서버
 │   └── run_pipeline.py              # end-to-end 파이프라인
 ├── docs/                            # 일별 작업 summary
 ├── playwright/                      # 생성된 Playwright 테스트 코드
@@ -229,3 +251,4 @@ QA Agent MVP - End-to-End Pipeline
 | Day 16 | end-to-end 파이프라인 구현 |
 | Day 17 | 검증 결과 markdown 리포트 자동 생성 |
 | Day 18 | Playwright 테스트 코드 자동 생성 및 실제 구현 |
+| Day 25 | 파이프라인 로직 core.py 분리, FastAPI 웹 API 서버 + mock 모드, 서버 테스트 CI 연동 |
