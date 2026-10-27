@@ -1,5 +1,4 @@
 ![CI](https://github.com/11000db/qa-agent-mvp/actions/workflows/test.yml/badge.svg)
-![CI](https://github.com/11000db/qa-agent-mvp/actions/workflows/test.yml/badge.svg)
 
 # QA Agent MVP
 
