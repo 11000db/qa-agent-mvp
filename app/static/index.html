@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QA Agent</title>
+  <meta name="description" content="요구사항을 입력하면 테스트 케이스 생성, 11개 품질 규칙 + JSON Schema 검증, 리포트, Playwright 코드까지 한 번에." />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">QA</span>
+      <div>
+        <h1>QA Agent</h1>
+        <p class="tagline">요구사항 → 테스트 케이스 → 품질 검증 → Playwright 코드</p>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <span class="status-chip" data-testid="server-status" data-state="loading">서버 확인 중…</span>
+      <a class="link" href="/docs" target="_blank" rel="noopener">API 문서</a>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- 입력 패널 -->
+    <section class="panel" aria-labelledby="input-title">
+      <h2 id="input-title" class="panel-title">입력</h2>
+
+      <div class="tabs" role="tablist" aria-label="입력 방식">
+        <button class="tab" role="tab" id="tab-generate" aria-selected="true" aria-controls="panel-generate" data-testid="input-tab-generate">요구사항으로 생성</button>
+        <button class="tab" role="tab" id="tab-analyze" aria-selected="false" aria-controls="panel-analyze" tabindex="-1" data-testid="input-tab-analyze">TC JSON 검증</button>
+      </div>
+
+      <div id="panel-generate" role="tabpanel" aria-labelledby="tab-generate" class="tabpanel">
+        <div class="field">
+          <span class="field-label">샘플 요구사항</span>
+          <div class="chips" data-testid="sample-list"></div>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="requirement">요구사항 문서</label>
+          <textarea id="requirement" data-testid="requirement-input" rows="12" maxlength="20000"
+            placeholder="예) 이메일/비밀번호 기반 로그인&#10;- 잘못된 정보 입력 시 오류 메시지 표시&#10;- 로그인 성공 시 메인 페이지 이동"></textarea>
+          <div class="field-hint"><span data-testid="char-count">0</span> / 20,000자 · Ctrl+Enter로 실행</div>
+        </div>
+
+        <div class="row">
+          <label class="field-label inline" for="mode">생성 모드</label>
+          <select id="mode" data-testid="mode-select">
+            <option value="auto">auto (키 있으면 live)</option>
+            <option value="mock">mock (샘플 결과)</option>
+            <option value="live">live (Claude API)</option>
+          </select>
+          <button class="btn primary" id="run" data-testid="run-button">생성 + 검증 실행</button>
+        </div>
+      </div>
+
+      <div id="panel-analyze" role="tabpanel" aria-labelledby="tab-analyze" class="tabpanel" hidden>
+        <div class="field">
+          <label class="field-label" for="tc-json">테스트 케이스 JSON</label>
+          <textarea id="tc-json" class="mono" data-testid="tc-json-input" rows="16" spellcheck="false"
+            placeholder='{ "feature_name": "...", "priority": "P0", ... }'></textarea>
+          <div class="field-hint">직접 작성했거나 다른 도구로 만든 테스트 케이스를 같은 규칙으로 검증합니다.</div>
+        </div>
+        <div class="row end">
+          <button class="btn primary" id="analyze" data-testid="analyze-button">검증 실행</button>
+        </div>
+      </div>
+
+      <div class="alert" role="alert" data-testid="error-message" hidden></div>
+    </section>
+
+    <!-- 결과 패널 -->
+    <section class="panel result" aria-labelledby="result-title" aria-live="polite">
+      <h2 id="result-title" class="panel-title">결과</h2>
+
+      <div class="empty" data-testid="empty-state">
+        <p>왼쪽에서 샘플을 고르거나 요구사항을 입력한 뒤 실행하세요.</p>
+        <p class="muted">API 키가 없으면 mock 모드로 샘플 결과를 보여줍니다.</p>
+      </div>
+
+      <div class="loading" data-testid="loading" hidden>
+        <span class="spinner" aria-hidden="true"></span>
+        <span>테스트 케이스를 만들고 검증하는 중…</span>
+      </div>
+
+      <div data-testid="result" hidden>
+        <div class="summary">
+          <div class="verdict" data-testid="verdict"></div>
+          <div class="summary-main">
+            <div class="feature" data-testid="feature-name"></div>
+            <div class="badges">
+              <span class="badge" data-testid="priority"></span>
+              <span class="badge" data-testid="risk-level"></span>
+              <span class="badge subtle" data-testid="result-mode"></span>
+            </div>
+          </div>
+        </div>
+
+        <dl class="metrics">
+          <div><dt>품질 규칙</dt><dd data-testid="metric-rules"></dd></div>
+          <div><dt>Schema 오류</dt><dd data-testid="metric-schema"></dd></div>
+          <div><dt>Negative</dt><dd data-testid="metric-negative"></dd></div>
+          <div><dt>Edge</dt><dd data-testid="metric-edge"></dd></div>
+          <div><dt>Regression</dt><dd data-testid="metric-regression"></dd></div>
+        </dl>
+
+        <div class="tabs" role="tablist" aria-label="결과 보기">
+          <button class="tab" role="tab" id="rtab-validation" aria-selected="true" aria-controls="rpanel-validation" data-testid="result-tab-validation">검증 결과</button>
+          <button class="tab" role="tab" id="rtab-testcase" aria-selected="false" aria-controls="rpanel-testcase" tabindex="-1" data-testid="result-tab-testcase">테스트 케이스</button>
+          <button class="tab" role="tab" id="rtab-report" aria-selected="false" aria-controls="rpanel-report" tabindex="-1" data-testid="result-tab-report">리포트</button>
+          <button class="tab" role="tab" id="rtab-playwright" aria-selected="false" aria-controls="rpanel-playwright" tabindex="-1" data-testid="result-tab-playwright">Playwright</button>
+          <button class="tab" role="tab" id="rtab-json" aria-selected="false" aria-controls="rpanel-json" tabindex="-1" data-testid="result-tab-json">JSON</button>
+        </div>
+
+        <div id="rpanel-validation" role="tabpanel" aria-labelledby="rtab-validation" class="tabpanel">
+          <div class="table-wrap">
+            <table class="rules">
+              <thead><tr><th>#</th><th>검사 항목</th><th>결과</th><th>상세</th></tr></thead>
+              <tbody data-testid="rule-rows"></tbody>
+            </table>
+          </div>
+          <h3 class="sub">JSON Schema 검증</h3>
+          <div data-testid="schema-result"></div>
+        </div>
+
+        <div id="rpanel-testcase" role="tabpanel" aria-labelledby="rtab-testcase" class="tabpanel" hidden>
+          <p class="summary-text" data-testid="requirement-summary"></p>
+          <div class="tc-sections" data-testid="tc-sections"></div>
+        </div>
+
+        <div id="rpanel-report" role="tabpanel" aria-labelledby="rtab-report" class="tabpanel" hidden>
+          <div class="toolbar">
+            <button class="btn" data-copy="report" data-testid="copy-report">복사</button>
+            <button class="btn" data-download="report" data-testid="download-report">.md 다운로드</button>
+          </div>
+          <pre class="code" data-testid="report-output"></pre>
+        </div>
+
+        <div id="rpanel-playwright" role="tabpanel" aria-labelledby="rtab-playwright" class="tabpanel" hidden>
+          <div class="toolbar">
+            <button class="btn" data-copy="playwright" data-testid="copy-playwright">복사</button>
+            <button class="btn" data-download="playwright" data-testid="download-playwright">.spec.ts 다운로드</button>
+          </div>
+          <pre class="code" data-testid="playwright-output"></pre>
+        </div>
+
+        <div id="rpanel-json" role="tabpanel" aria-labelledby="rtab-json" class="tabpanel" hidden>
+          <div class="toolbar">
+            <button class="btn" data-copy="json" data-testid="copy-json">복사</button>
+            <button class="btn" data-download="json" data-testid="download-json">.json 다운로드</button>
+          </div>
+          <pre class="code" data-testid="json-output"></pre>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" role="status" data-testid="toast" hidden></div>
+
+  <footer class="footer">
+    QA Agent MVP · Claude API + Python + FastAPI + Playwright
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

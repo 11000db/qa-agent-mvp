@@ -1,20 +1,25 @@
 """
-QA Agent 웹 API 서버 (Day 25)
+QA Agent 웹 서버 (Day 25: API, Day 26: 웹 UI)
 
 실행:
     python app/server.py
-    → http://127.0.0.1:8000/docs (Swagger UI)
+    → http://127.0.0.1:8000       (웹 UI)
+    → http://127.0.0.1:8000/docs  (Swagger UI)
 """
 import os
+from pathlib import Path
 from typing import Literal
 
 import anthropic
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 import core
 
 MAX_REQUIREMENT_LENGTH = 20000
+STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 app = FastAPI(
     title="QA Agent MVP API",
@@ -43,6 +48,22 @@ def _generate(req: RequirementRequest) -> tuple:
         raise HTTPException(status_code=502, detail=str(e)) from e
     except anthropic.APIError as e:
         raise HTTPException(status_code=502, detail=f"Claude API 호출 실패: {e}") from e
+
+
+def _analyze(test_case: dict, mode: str) -> dict:
+    validation = core.validate_test_case(test_case)
+    return {
+        "mode": mode,
+        "test_case": test_case,
+        "validation": validation,
+        "report_markdown": core.build_report_markdown(test_case, validation, source=f"web ({mode})"),
+        "playwright_code": core.build_playwright_spec(test_case),
+    }
+
+
+@app.get("/", include_in_schema=False)
+def index() -> FileResponse:
+    return FileResponse(STATIC_DIR / "index.html")
 
 
 @app.get("/api/health")
@@ -87,14 +108,16 @@ def playwright(req: TestCaseRequest) -> dict:
 @app.post("/api/pipeline")
 def pipeline(req: RequirementRequest) -> dict:
     test_case, used_mode = _generate(req)
-    validation = core.validate_test_case(test_case)
-    return {
-        "mode": used_mode,
-        "test_case": test_case,
-        "validation": validation,
-        "report_markdown": core.build_report_markdown(test_case, validation, source=f"pipeline ({used_mode})"),
-        "playwright_code": core.build_playwright_spec(test_case),
-    }
+    return _analyze(test_case, used_mode)
+
+
+@app.post("/api/analyze")
+def analyze(req: TestCaseRequest) -> dict:
+    """이미 작성된 테스트 케이스 JSON을 검증 + 리포트 + Playwright 변환"""
+    return _analyze(req.test_case, "input")
+
+
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
 if __name__ == "__main__":

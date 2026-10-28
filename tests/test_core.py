@@ -123,3 +123,25 @@ class TestOutputs:
         assert "import { test, expect } from '@playwright/test';" in code
         assert "test.describe(" in code
         assert "Negative Cases" in code
+
+
+class TestPlaywrightEscaping:
+    """사용자/AI 입력이 생성 코드의 문법을 깨지 않아야 한다"""
+
+    def test_quote_in_feature_name_is_escaped(self):
+        code = core.build_playwright_spec({"feature_name": "it's \"quoted\""})
+        assert 'test.describe("it\'s \\"quoted\\"", () => {' in code
+
+    def test_newline_cannot_escape_comment(self):
+        code = core.build_playwright_spec({"test_steps": ["첫 줄\nawait page.evaluate('evil')"]})
+        assert "\nawait page.evaluate('evil')" not in code
+        assert "    // 첫 줄 await page.evaluate('evil')" in code
+
+    def test_block_comment_terminator_is_neutralized(self):
+        code = core.build_playwright_spec({"feature_name": "x */ alert(1) /*"})
+        header = code.split(" */\n", 1)[0]
+        assert "alert(1)" in header
+
+    def test_non_list_fields_are_ignored(self):
+        code = core.build_playwright_spec({"test_steps": "문자열", "negative_cases": None})
+        assert "Negative Cases" not in code
