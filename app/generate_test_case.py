@@ -1,58 +1,15 @@
 import json
 import sys
 from pathlib import Path
-from datetime import datetime
 
-import anthropic
-from dotenv import load_dotenv
+import core
 
-load_dotenv()
+# [기록] Day 15 원본은 이 파일 안에 프롬프트 조립 / Claude API 호출 / JSON 파싱을 직접 구현했다.
+#        Day 25에 같은 로직을 core.py로 옮겨 CLI와 웹 서버가 함께 쓴다.
+#        원본 코드: git show bd24ae4:app/generate_test_case.py
 
 DEFAULT_INPUT_PATH = Path("sample_inputs/login_requirement.md")
 DEFAULT_OUTPUT_DIR = Path("sample_outputs")
-TEMPLATE_PATH = Path("prompts/requirement_to_test_case.md")
-PLACEHOLDER = "{{requirement_text}}"
-
-client = anthropic.Anthropic()
-
-
-def read_text_file(path: Path) -> str:
-    return path.read_text(encoding="utf-8")
-
-
-def build_final_prompt(template_text: str, requirement_text: str) -> str:
-    if PLACEHOLDER not in template_text:
-        raise ValueError(f"프롬프트 템플릿에 자리표시자 {PLACEHOLDER} 가 없습니다.")
-    return template_text.replace(PLACEHOLDER, requirement_text)
-
-
-def call_claude_api(prompt: str) -> str:
-    message = client.messages.create(
-        model="claude-sonnet-4-5",
-        max_tokens=4096,  # 2048 → 4096으로 변경
-        messages=[
-            {"role": "user", "content": prompt}
-        ]
-    )
-    return message.content[0].text
-
-
-def parse_json_response(response_text: str) -> dict:
-    cleaned = response_text.strip()
-    
-    # ```json ... ``` 형태 처리
-    if "```json" in cleaned:
-        cleaned = cleaned.split("```json")[1].split("```")[0]
-    elif "```" in cleaned:
-        cleaned = cleaned.split("```")[1].split("```")[0]
-    
-    # { 부터 } 까지만 추출
-    start = cleaned.find("{")
-    end = cleaned.rfind("}") + 1
-    if start != -1 and end != 0:
-        cleaned = cleaned[start:end]
-    
-    return json.loads(cleaned.strip())
 
 
 def save_json_file(path: Path, data: dict) -> None:
@@ -67,38 +24,19 @@ def main() -> None:
     if not input_path.exists():
         raise FileNotFoundError(f"요구사항 파일이 없습니다: {input_path}")
 
-    if not TEMPLATE_PATH.exists():
-        raise FileNotFoundError(f"프롬프트 템플릿 파일이 없습니다: {TEMPLATE_PATH}")
-
-    # 파일 읽기
-    requirement_text = read_text_file(input_path)
-    template_text = read_text_file(TEMPLATE_PATH)
-
-    # 프롬프트 생성
-    final_prompt = build_final_prompt(template_text, requirement_text)
+    requirement_text = input_path.read_text(encoding="utf-8")
 
     print("테스트 케이스 생성 시작")
     print(f"- 입력 파일: {input_path}")
-
-    # 클로드 API 호출
     print("- Claude API 호출 중...")
-    response_text = call_claude_api(final_prompt)
+    test_case_data = core.generate_live_test_case(requirement_text)
 
-    # JSON 파싱
-    print("- 응답 파싱 중...")
-    test_case_data = parse_json_response(response_text)
-
-    # 출력 파일명 생성 (입력 파일명 기반)
     stem = input_path.stem.replace("_requirement", "")
-    output_filename = f"{stem}_test_case.json"
-    output_path = DEFAULT_OUTPUT_DIR / output_filename
-
-    # 저장
+    output_path = DEFAULT_OUTPUT_DIR / f"{stem}_test_case.json"
     save_json_file(output_path, test_case_data)
 
     print(f"- 저장 완료: {output_path}")
     print("테스트 케이스 생성 완료")
-    
 
 
 if __name__ == "__main__":

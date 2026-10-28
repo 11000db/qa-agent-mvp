@@ -1,0 +1,10 @@
+.git
+.github
+.env
+node_modules
+playwright-report
+test-results
+**/__pycache__
+docs
+tests
+playwright
