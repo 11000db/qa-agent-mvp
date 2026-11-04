@@ -8,6 +8,7 @@
 
 실행: python measure/run_measurement.py
 결과: measure/results/results.json, measure/results/report.md
+리포트만 다시 만들기: python measure/run_measurement.py --render
 """
 import json
 import os
@@ -85,7 +86,7 @@ def parse_report(report: dict) -> list:
                 match = ITEM_ID.match(spec["title"])
                 rows.append({
                     "project": t["projectName"],
-                    "feature": Path(file).stem,
+                    "feature": Path(file).name.split(".")[0],
                     "title": spec["title"],
                     "item": match.group(1) if match else spec["title"],
                     "happy": "@happy" in spec.get("tags", []) or "happy" in spec.get("tags", []),
@@ -253,4 +254,9 @@ def render_report(results: dict) -> str:
 
 
 if __name__ == "__main__":
-    main()
+    if "--render" in sys.argv:
+        saved = json.loads((RESULT_DIR / "results.json").read_text(encoding="utf-8"))
+        (RESULT_DIR / "report.md").write_text(render_report(saved), encoding="utf-8")
+        print(f"리포트를 다시 만들었습니다: {RESULT_DIR / 'report.md'}")
+    else:
+        main()
