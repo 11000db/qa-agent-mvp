@@ -66,5 +66,5 @@ QA Agent는 "테스트 케이스의 품질을 검증하는 도구"입니다.
 - 새 E2E를 추가할 때 같은 방식으로 반복 실행 후 머지
 
 ## 7. 알려진 한계 / 다음 단계
-- Claude가 만든 테스트 케이스의 "내용 품질"은 아직 자동 측정하지 않는다 → 로드맵 4단계: 결함을 심은 데모 앱으로 검출률 측정
+- AI가 만든 테스트 케이스의 "내용 품질"은 Day 27에 결함 주입으로 측정했다 → [docs/measurement/analysis.md](measurement/analysis.md)
 - 브라우저는 Chromium만 실행 (Firefox / WebKit은 필요 시 프로젝트 추가)
