@@ -1,8 +1,13 @@
 name: 측정 결과 페이지 배포
 
-# 레포 Settings → Pages → Source를 "GitHub Actions"로 켠 뒤 Actions 탭에서 수동 실행한다.
-# 설정을 켜기 전에 자동으로 돌면 배포가 실패하므로, 켜고 나서 아래 push 트리거를 되살린다.
+# 사전 설정: 레포 Settings → Pages → Source = "GitHub Actions"
 on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'site/**'
+      - 'measure/results/**'
+      - '.github/workflows/pages.yml'
   workflow_dispatch:
 
 permissions:
