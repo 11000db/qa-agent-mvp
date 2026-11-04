@@ -17,6 +17,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 import core
+import shop
 
 MAX_REQUIREMENT_LENGTH = 20000
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -117,6 +118,7 @@ def analyze(req: TestCaseRequest) -> dict:
     return _analyze(req.test_case, "input")
 
 
+app.include_router(shop.router)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 

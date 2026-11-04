@@ -5,6 +5,35 @@
 > 요구사항 문서를 넣으면 **테스트 케이스 생성 → 11개 품질 규칙 + JSON Schema 검증 → 리포트 → Playwright 코드**까지 한 번에 만들어 주는 QA 자동화 도구.
 > AI가 만든 테스트 케이스를 그대로 믿지 않고, **QA 관점의 규칙으로 검증**하는 것이 핵심입니다.
 
+## 실험: AI가 만든 테스트는 버그를 얼마나 잡을까?
+
+요구사항 3개로 데모 쇼핑몰을 만들고, 요구사항 문장에 근거한 결함 28개를 심었습니다.
+AI가 만든 TC를 Playwright 테스트로 옮겨 결함을 하나씩 켜 가며 실행했습니다.
+
+![결함 검출률 측정 보고서](docs/images/measurement-report.png)
+
+| 테스트 세트 | 검출률 | 무효 TC 항목 |
+|---|---|---|
+| 정상 흐름만 | **28.6%** (8/28) | 2 |
+| TC v1 (Day 24 노하우 주입 전) | **92.9%** (26/28) | 2 |
+| TC v2 (Day 24 노하우 주입 후) | **92.9%** (26/28) | 7 |
+
+- 정상 흐름만 테스트하면 "잘못된 비밀번호로도 로그인됨" 같은 치명적 결함을 놓친다
+- 노하우 주입은 검출 수를 바꾸지 못했고, 대신 잡는 결함의 종류를 바꿨다 (Regression 항목이 C11 검출)
+- 노하우 주입 후 요구사항에 없는 동작을 기대하는 항목(실무에선 가짜 버그 리포트)이 2개에서 7개로 늘었다
+- 두 버전 모두 놓친 결함은 기대 결과 없이 "확인"으로만 쓴 TC 항목 때문이었다
+
+측정 방법: [docs/measurement/protocol.md](docs/measurement/protocol.md) · 분석: [docs/measurement/analysis.md](docs/measurement/analysis.md) · 결함별 결과: [measure/results/report.md](measure/results/report.md)
+
+```bash
+python measure/run_measurement.py   # 기준선 2회 + 결함 28개 측정 (약 35분)
+python site/build.py                # 결과 페이지 생성 → site/dist/index.html
+```
+
+---
+
+## QA Agent 화면
+
 ![QA Agent 웹 UI](docs/images/ui-desktop-light.png)
 
 | 품질 규칙 위반 감지 (FAIL) | 모바일 |
@@ -175,6 +204,8 @@ qa-agent-mvp/
 │   ├── schema_validate_test_case.py # JSON Schema 검증 CLI
 │   ├── generate_report.py           # 리포트 생성 CLI
 │   ├── generate_playwright.py       # Playwright 코드 생성
+│   ├── shop.py                      # 측정용 데모 쇼핑몰 (/shop)
+│   ├── shop_faults.py               # 심은 결함 28개 (요구사항 근거)
 │   └── main.py                      # 프롬프트 조립 (Day 1~)
 ├── tests/
 │   ├── test_core.py                 # 단위 테스트
@@ -182,6 +213,8 @@ qa-agent-mvp/
 │   ├── test_api_login.py            # 외부 API 테스트 (dummyjson)
 │   └── e2e/                         # 웹 UI E2E (Playwright, Page Object)
 ├── playwright/                      # 파이프라인이 생성한 테스트
+├── measure/                         # 결함 검출률 측정 (TC v1/v2 테스트, 실행기, 결과)
+├── site/                            # 측정 결과 페이지 (template.html, build.py)
 ├── prompts/                         # 프롬프트 템플릿 (Knowledge Injection 포함)
 ├── schemas/                         # JSON Schema
 ├── sample_inputs/ sample_outputs/ sample_reports/
@@ -213,7 +246,8 @@ qa-agent-mvp/
 | 1. 보여주기 | 웹 UI + API + mock 모드 | ✅ 완료 (Day 25~26) |
 | 2. 스스로 검증하기 | 이 도구 자체를 단위 / API / E2E로 테스트하고 CI 연동 | ✅ 완료 (Day 26) |
 | 3. 팀 워크플로에 붙이기 | PR에서 요구사항 문서가 바뀌면 TC 생성 + 검증 결과를 PR 코멘트로 남기는 GitHub Action | 예정 |
-| 4. 품질 측정하기 | 데모 앱에 결함을 일부러 심고, AI 생성 테스트의 결함 검출률을 측정 | 예정 |
+| 4. 품질 측정하기 | 데모 앱에 결함을 일부러 심고, AI 생성 테스트의 결함 검출률을 측정 | ✅ 1차 완료 (Day 27) |
+| 5. 개선 후 재측정 | 판정 기준 없는 항목 검출 규칙 + 프롬프트 수정 → TC v3 반복 생성으로 평균/편차 측정 | 예정 |
 
 ---
 
@@ -236,3 +270,4 @@ qa-agent-mvp/
 | Day 24 | Knowledge Injection Layer: Regression 포인트 자동 포함 |
 | Day 25 | 파이프라인 로직 core.py 분리, FastAPI 웹 API + mock 모드, 중복 검사 미수행 버그 수정 |
 | Day 26 | 웹 UI, Playwright E2E(Page Object, 데스크톱+모바일), CI 3단 분리, Docker |
+| Day 27 | 결함 주입 측정: 데모 쇼핑몰 + 결함 28개, TC v1/v2 검출률 측정, 결과 페이지 |

@@ -4,3 +4,5 @@ playwright-report/
 test-results/
 __pycache__/
 *.pyc
+measure/results/.last-run.json
+site/dist/
