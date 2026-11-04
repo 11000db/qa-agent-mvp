@@ -56,10 +56,11 @@ python app/run_pipeline.py sample_inputs/cart_requirement.md --mode mock
 python -m pytest tests/test_core.py tests/test_server.py -v
 ```
 
-## 면접 설명 포인트
-"CLI 스크립트를 서비스로 바꾸면서 로직을 core 모듈로 분리했고,
-API 키 없이도 동작하는 mock 모드를 넣어 CI에서 외부 의존 없이 테스트합니다.
-리팩토링 중 기존 파이프라인이 중복 검사 4개를 실제로 하지 않고 PASS를 출력하던 버그도 찾아 고쳤습니다."
+## 정리
+검증 규칙이 파일 세 곳에 따로 복사돼 있었고, 그중 run_pipeline.py는 8~11번을 검사하지 않고 PASS를 찍고 있었다.
+테스트 케이스를 검증하는 도구가 정작 자기 자신은 검증되지 않고 있었던 셈이다.
+로직을 core.py 한 곳으로 모으고, 규칙마다 테스트를 붙였다.
+mock 모드 덕분에 API 키가 없어도 CI에서 서버 테스트가 돈다.
 
 ## 다음 단계 (Day 26~)
 - Day 26: 웹 UI (요구사항 입력 → 결과 탭 → 코드 복사/다운로드)
